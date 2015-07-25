@@ -5,9 +5,9 @@
   <meta name="viewport" content="target-densitydpi=device-dpi, height=660, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>BlocklyDuino: Block Factory</title>
   <script src="factory.js"></script>
-  <script src="blockly_compressed.js"></script>
-  <script src="messages.js"></script>
-  <script src="blocks.js"></script>
+  <script src="blockly/blockly_compressed.js"></script>
+  <script src="blockly/msg/messages.js"></script>
+  <script src="factory_blocks.js"></script>
   <style>
     html, body {
       height: 100%;
@@ -87,8 +87,8 @@
       display: none;
     }
   </style>
-  <link rel="stylesheet" href="prettify.css">
-  <script src="prettify.js"></script>
+  <link rel="stylesheet" href="prettify/prettify.css">
+  <script src="prettify/prettify.js"></script>
 </head>
 <body>
   <table>
@@ -109,10 +109,10 @@
             </td>
             <td style="vertical-align: middle; text-align: right;">
               <button id="linkButton" title="Save and link to blocks.">
-                <img src="media/link.png" height="21" width="21">
+                <img src="blockly/media/link.png" height="21" width="21">
               </button>
               <button id="linkButton" title="Save and link to blocks.">
-                <img src="media/link.png" height="21" width="21">
+                <img src="blockly/media/link.png" height="21" width="21">
               </button>
               <button id="helpButton" title="View documentation in new window.">
                 <span>Help</span>
