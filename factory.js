@@ -25,13 +25,13 @@
 
 /**
  * Workspace for user to build block.
- * @type Blockly.Workspace
+ * @type {Blockly.Workspace}
  */
 var mainWorkspace = null;
 
 /**
  * Workspace for preview of block.
- * @type Blockly.Workspace
+ * @type {Blockly.Workspace}
  */
 var previewWorkspace = null;
 
@@ -48,6 +48,7 @@ function formatChange() {
   var languagePre = document.getElementById('languagePre');
   var languageTA = document.getElementById('languageTA');
   if (document.getElementById('format').value == 'Manual') {
+    Blockly.hideChaff();
     mask.style.display = 'block';
     languagePre.style.display = 'none';
     languageTA.style.display = 'block';
@@ -77,8 +78,14 @@ function updateLanguage() {
     blockType = UNNAMED;
   }
   blockType = blockType.replace(/\W/g, '_').replace(/^(\d)/, '_\\1');
-  var code = formatJavaScript_(blockType, rootBlock);
-
+  switch (document.getElementById('format').value) {
+    case 'JSON':
+      var code = formatJson_(blockType, rootBlock);
+      break;
+    case 'JavaScript':
+      var code = formatJavaScript_(blockType, rootBlock);
+      break;
+  }
   injectCode(code, 'languagePre');
   updatePreview();
 }
@@ -607,7 +614,7 @@ function updatePreview() {
   previewWorkspace.clear();
 
   // Fetch the code and determine its format (JSON or JavaScript).
-  var format = "JavaScript";
+  var format = document.getElementById('format').value;
   if (format == 'Manual') {
     var code = document.getElementById('languageTA').value;
     // If the code is JSON, it will parse, otherwise treat as JS.
@@ -778,5 +785,7 @@ function init() {
       .addEventListener('change', updatePreview);
   document.getElementById('languageTA')
       .addEventListener('keyup', updatePreview);
+  document.getElementById('format')
+      .addEventListener('change', formatChange);
 }
 window.addEventListener('load', init);
