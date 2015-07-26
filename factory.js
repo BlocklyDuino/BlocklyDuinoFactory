@@ -1,7 +1,9 @@
 /**
- * Blockly Demos: Block Factory
+ * BlocklyDuinoFactory Factory module
  *
- * Copyright 2012 Google Inc.
+ * Copyright 2015 BlocklyDuino https://github.com/BlocklyDuino
+ * 
+ * Based on the Block Factory Blockly demo Copyright 2012 Google Inc.
  * https://developers.google.com/blockly/
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,86 +20,35 @@
  */
 
 /**
- * @fileoverview JavaScript for Blockly's Block Factory application.
- * @author fraser@google.com (Neil Fraser)
+ * @fileoverview JavaScript for BlocklyDuinoFactory block factory module.
  */
 'use strict';
+
+/**
+ * Create a namespace nested in the BlocklyDuinoFactory application.
+ */
+var Bdf = Bdf || {};
+Bdf.Factory = Bdf.Factory || {};
 
 /**
  * Workspace for user to build block.
  * @type {Blockly.Workspace}
  */
-var mainWorkspace = null;
-
-/**
- * Workspace for preview of block.
- * @type {Blockly.Workspace}
- */
-var previewWorkspace = null;
+Bdf.Factory.workspace = null;
 
 /**
  * Name of block if not named.
  */
-var UNNAMED = 'unnamed';
-
-/**
- * Change the language code format.
- */
-function formatChange() {
-  var mask = document.getElementById('blocklyMask');
-  var languagePre = document.getElementById('languagePre');
-  var languageTA = document.getElementById('languageTA');
-  if (document.getElementById('format').value == 'Manual') {
-    Blockly.hideChaff();
-    mask.style.display = 'block';
-    languagePre.style.display = 'none';
-    languageTA.style.display = 'block';
-    var code = languagePre.textContent.trim();
-    languageTA.value = code;
-    languageTA.focus();
-    updatePreview();
-  } else {
-    mask.style.display = 'none';
-    languageTA.style.display = 'none';
-    languagePre.style.display = 'block';
-    updateLanguage();
-  }
-  disableEnableLink();
-}
-
-/**
- * Update the language code based on constructs made in Blockly.
- */
-function updateLanguage() {
-  var rootBlock = getRootBlock();
-  if (!rootBlock) {
-    return;
-  }
-  var blockType = rootBlock.getFieldValue('NAME').trim().toLowerCase();
-  if (!blockType) {
-    blockType = UNNAMED;
-  }
-  blockType = blockType.replace(/\W/g, '_').replace(/^(\d)/, '_\\1');
-  switch (document.getElementById('format').value) {
-    case 'JSON':
-      var code = formatJson_(blockType, rootBlock);
-      break;
-    case 'JavaScript':
-      var code = formatJavaScript_(blockType, rootBlock);
-      break;
-  }
-  injectCode(code, 'languagePre');
-  updatePreview();
-}
+Bdf.Factory.UNNAMED = 'unnamed';
 
 /**
  * Update the language code as JSON.
  * @param {string} blockType Name of block.
  * @param {!Blockly.Block} rootBlock Factory_base block.
- * @return {string} Generanted language code.
+ * @return {string} Generated language code.
  * @private
  */
-function formatJson_(blockType, rootBlock) {
+Bdf.Factory.formatJson_ = function(blockType, rootBlock) {
   var JS = {};
   // ID is not used by Blockly, but may be used by a loader.
   JS.id = blockType;
@@ -108,7 +59,8 @@ function formatJson_(blockType, rootBlock) {
   var lastInput = null;
   while (contentsBlock) {
     if (!contentsBlock.disabled && !contentsBlock.getInheritedDisabled()) {
-      var fields = getFieldsJson_(contentsBlock.getInputTargetBlock('FIELDS'));
+      var fields = Bdf.Factory.getFieldsJson_(
+          contentsBlock.getInputTargetBlock('FIELDS'));
       for (var i = 0; i < fields.length; i++) {
         if (typeof fields[i] == 'string') {
           message.push(fields[i].replace(/%/g, '%%'));
@@ -123,7 +75,8 @@ function formatJson_(blockType, rootBlock) {
       if (contentsBlock.type != 'input_dummy') {
         input.name = contentsBlock.getFieldValue('INPUTNAME');
       }
-      var check = JSON.parse(getOptTypesFrom(contentsBlock, 'TYPE') || 'null');
+      var check = JSON.parse(Bdf.Factory.getOptTypesFrom(
+          contentsBlock, 'TYPE') || 'null');
       if (check) {
         input.check = check;
       }
@@ -141,7 +94,7 @@ function formatJson_(blockType, rootBlock) {
   // Remove last input if dummy and not empty.
   if (lastInput && lastInput.type == 'input_dummy') {
     var fields = lastInput.getInputTargetBlock('FIELDS');
-    if (fields && getFieldsJson_(fields).join('').trim() != '') {
+    if (fields && Bdf.Factory.getFieldsJson_(fields).join('').trim() != '') {
       var align = lastInput.getFieldValue('ALIGN');
       if (align != 'LEFT') {
         JS.lastDummyAlign0 = align;
@@ -161,22 +114,26 @@ function formatJson_(blockType, rootBlock) {
   // Generate output, or next/previous connections.
   switch (rootBlock.getFieldValue('CONNECTIONS')) {
     case 'LEFT':
-      JS.output =
-          JSON.parse(getOptTypesFrom(rootBlock, 'OUTPUTTYPE') || 'null');
+      JS.output = JSON.parse(
+          Bdf.Factory.getOptTypesFrom(rootBlock, 'OUTPUTTYPE') || 'null');
       break;
     case 'BOTH':
       JS.previousStatement =
-          JSON.parse(getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
+          JSON.parse(
+              Bdf.Factory.getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
       JS.nextStatement =
-          JSON.parse(getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
+          JSON.parse(
+              Bdf.Factory.getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
       break;
     case 'TOP':
       JS.previousStatement =
-          JSON.parse(getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
+          JSON.parse(
+              Bdf.Factory.getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
       break;
     case 'BOTTOM':
       JS.nextStatement =
-          JSON.parse(getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
+          JSON.parse(
+              Bdf.Factory.getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
       break;
   }
   // Generate colour.
@@ -188,19 +145,19 @@ function formatJson_(blockType, rootBlock) {
   JS.tooltip = '';
   JS.helpUrl = 'http://www.example.com/';
   return JSON.stringify(JS, null, '  ');
-}
+};
 
 /**
  * Update the language code as JavaScript.
  * @param {string} blockType Name of block.
  * @param {!Blockly.Block} rootBlock Factory_base block.
- * @return {string} Generanted language code.
+ * @return {string} Generated language code.
  * @private
  */
-function formatJavaScript_(blockType, rootBlock) {
+Bdf.Factory.formatJavaScript_ = function(blockType, rootBlock) {
   var code = [];
   code.push("Blockly.Blocks['" + blockType + "'] = {");
-  code.push("  init: function() {");
+  code.push('  init: function() {');
   // Generate inputs.
   var TYPES = {'input_value': 'appendValueInput',
                'input_statement': 'appendStatementInput',
@@ -211,10 +168,10 @@ function formatJavaScript_(blockType, rootBlock) {
       var name = '';
       // Dummy inputs don't have names.  Other inputs do.
       if (contentsBlock.type != 'input_dummy') {
-        name = escapeString(contentsBlock.getFieldValue('INPUTNAME'));
+        name = Bdf.escapeString(contentsBlock.getFieldValue('INPUTNAME'));
       }
       code.push('    this.' + TYPES[contentsBlock.type] + '(' + name + ')');
-      var check = getOptTypesFrom(contentsBlock, 'TYPE');
+      var check = Bdf.Factory.getOptTypesFrom(contentsBlock, 'TYPE');
       if (check) {
         code.push('        .setCheck(' + check + ')');
       }
@@ -222,7 +179,8 @@ function formatJavaScript_(blockType, rootBlock) {
       if (align != 'LEFT') {
         code.push('        .setAlign(Blockly.ALIGN_' + align + ')');
       }
-      var fields = getFieldsJs_(contentsBlock.getInputTargetBlock('FIELDS'));
+      var fields = Bdf.Factory.getFieldsJs_(
+          contentsBlock.getInputTargetBlock('FIELDS'));
       for (var i = 0; i < fields.length; i++) {
         code.push('        .appendField(' + fields[i] + ')');
       }
@@ -241,17 +199,21 @@ function formatJavaScript_(blockType, rootBlock) {
   // Generate output, or next/previous connections.
   switch (rootBlock.getFieldValue('CONNECTIONS')) {
     case 'LEFT':
-      code.push(connectionLineJs_('setOutput', 'OUTPUTTYPE'));
+      code.push(Bdf.Factory.connectionLineJs_('setOutput', 'OUTPUTTYPE'));
       break;
     case 'BOTH':
-      code.push(connectionLineJs_('setPreviousStatement', 'TOPTYPE'));
-      code.push(connectionLineJs_('setNextStatement', 'BOTTOMTYPE'));
+      code.push(Bdf.Factory.connectionLineJs_(
+          'setPreviousStatement', 'TOPTYPE'));
+      code.push(Bdf.Factory.connectionLineJs_(
+          'setNextStatement', 'BOTTOMTYPE'));
       break;
     case 'TOP':
-      code.push(connectionLineJs_('setPreviousStatement', 'TOPTYPE'));
+      code.push(Bdf.Factory.connectionLineJs_(
+          'setPreviousStatement', 'TOPTYPE'));
       break;
     case 'BOTTOM':
-      code.push(connectionLineJs_('setNextStatement', 'BOTTOMTYPE'));
+      code.push(Bdf.Factory.connectionLineJs_(
+          'setNextStatement', 'BOTTOMTYPE'));
       break;
   }
   // Generate colour.
@@ -265,7 +227,7 @@ function formatJavaScript_(blockType, rootBlock) {
   code.push('  }');
   code.push('};');
   return code.join('\n');
-}
+};
 
 /**
  * Create JS code required to create a top, bottom, or value connection.
@@ -274,15 +236,15 @@ function formatJavaScript_(blockType, rootBlock) {
  * @return {string} Line of JavaScript code to create connection.
  * @private
  */
-function connectionLineJs_(functionName, typeName) {
-  var type = getOptTypesFrom(getRootBlock(), typeName);
+Bdf.Factory.connectionLineJs_ = function(functionName, typeName) {
+  var type = Bdf.Factory.getOptTypesFrom(Bdf.Factory.getRootBlock(), typeName);
   if (type) {
     type = ', ' + type;
   } else {
     type = '';
   }
   return '    this.' + functionName + '(true' + type + ');';
-}
+};
 
 /**
  * Returns field strings and any config.
@@ -290,71 +252,72 @@ function connectionLineJs_(functionName, typeName) {
  * @return {!Array.<string>} Field strings.
  * @private
  */
-function getFieldsJs_(block) {
+Bdf.Factory.getFieldsJs_ = function(block) {
   var fields = [];
   while (block) {
     if (!block.disabled && !block.getInheritedDisabled()) {
       switch (block.type) {
         case 'field_static':
           // Result: 'hello'
-          fields.push(escapeString(block.getFieldValue('TEXT')));
+          fields.push(Bdf.escapeString(block.getFieldValue('TEXT')));
           break;
         case 'field_input':
           // Result: new Blockly.FieldTextInput('Hello'), 'GREET'
           fields.push('new Blockly.FieldTextInput(' +
-              escapeString(block.getFieldValue('TEXT')) + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('TEXT')) + '), ' +
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_angle':
           // Result: new Blockly.FieldAngle(90), 'ANGLE'
           fields.push('new Blockly.FieldAngle(' +
-              escapeString(block.getFieldValue('ANGLE')) + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('ANGLE')) + '), ' +
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_checkbox':
           // Result: new Blockly.FieldCheckbox('TRUE'), 'CHECK'
           fields.push('new Blockly.FieldCheckbox(' +
-              escapeString(block.getFieldValue('CHECKED')) + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('CHECKED')) + '), ' +
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_colour':
           // Result: new Blockly.FieldColour('#ff0000'), 'COLOUR'
           fields.push('new Blockly.FieldColour(' +
-              escapeString(block.getFieldValue('COLOUR')) + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('COLOUR')) + '), ' +
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_date':
           // Result: new Blockly.FieldDate('2015-02-04'), 'DATE'
           fields.push('new Blockly.FieldDate(' +
-              escapeString(block.getFieldValue('DATE')) + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('DATE')) + '), ' +
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_variable':
           // Result: new Blockly.FieldVariable('item'), 'VAR'
-          var varname = escapeString(block.getFieldValue('TEXT') || null);
+          var varname = Bdf.escapeString(block.getFieldValue('TEXT') || null);
           fields.push('new Blockly.FieldVariable(' + varname + '), ' +
-              escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_dropdown':
           // Result:
           // new Blockly.FieldDropdown([['yes', '1'], ['no', '0']]), 'TOGGLE'
           var options = [];
           for (var i = 0; i < block.optionCount_; i++) {
-            options[i] = '[' + escapeString(block.getFieldValue('USER' + i)) +
-                ', ' + escapeString(block.getFieldValue('CPU' + i)) + ']';
+            options[i] = '[' + Bdf.escapeString(
+                block.getFieldValue('USER' + i)) + ', ' +
+                Bdf.escapeString(block.getFieldValue('CPU' + i)) + ']';
           }
           if (options.length) {
             fields.push('new Blockly.FieldDropdown([' +
                 options.join(', ') + ']), ' +
-                escapeString(block.getFieldValue('FIELDNAME')));
+                Bdf.escapeString(block.getFieldValue('FIELDNAME')));
           }
           break;
         case 'field_image':
           // Result: new Blockly.FieldImage('http://...', 80, 60)
-          var src = escapeString(block.getFieldValue('SRC'));
+          var src = Bdf.escapeString(block.getFieldValue('SRC'));
           var width = Number(block.getFieldValue('WIDTH'));
           var height = Number(block.getFieldValue('HEIGHT'));
-          var alt = escapeString(block.getFieldValue('ALT'));
+          var alt = Bdf.escapeString(block.getFieldValue('ALT'));
           fields.push('new Blockly.FieldImage(' +
               src + ', ' + width + ', ' + height + ', ' + alt + ')');
           break;
@@ -371,7 +334,7 @@ function getFieldsJs_(block) {
  * @return {!Array.<string|!Object>} Array of static text and field configs.
  * @private
  */
-function getFieldsJson_(block) {
+Bdf.Factory.getFieldsJson_= function(block) {
   var fields = [];
   while (block) {
     if (!block.disabled && !block.getInheritedDisabled()) {
@@ -450,16 +413,7 @@ function getFieldsJson_(block) {
     block = block.nextConnection && block.nextConnection.targetBlock();
   }
   return fields;
-}
-
-/**
- * Escape a string.
- * @param {string} string String to escape.
- * @return {string} Escaped string surrouned by quotes.
- */
-function escapeString(string) {
-  return JSON.stringify(string);
-}
+};
 
 /**
  * Fetch the type(s) defined in the given input.
@@ -468,8 +422,8 @@ function escapeString(string) {
  * @param {string} name Name of the input.
  * @return {?string} String defining the types.
  */
-function getOptTypesFrom(block, name) {
-  var types = getTypesFrom_(block, name);
+Bdf.Factory.getOptTypesFrom = function(block, name) {
+  var types = Bdf.Factory.getTypesFrom_(block, name);
   if (types.length == 0) {
     return undefined;
   } else if (types.indexOf('null') != -1) {
@@ -479,7 +433,7 @@ function getOptTypesFrom(block, name) {
   } else {
     return '[' + types.join(', ') + ']';
   }
-}
+};
 
 /**
  * Fetch the type(s) defined in the given input.
@@ -488,17 +442,17 @@ function getOptTypesFrom(block, name) {
  * @return {!Array.<string>} List of types.
  * @private
  */
-function getTypesFrom_(block, name) {
+Bdf.Factory.getTypesFrom_ = function(block, name) {
   var typeBlock = block.getInputTargetBlock(name);
   var types;
   if (!typeBlock || typeBlock.disabled) {
     types = [];
   } else if (typeBlock.type == 'type_other') {
-    types = [escapeString(typeBlock.getFieldValue('TYPE'))];
+    types = [Bdf.escapeString(typeBlock.getFieldValue('TYPE'))];
   } else if (typeBlock.type == 'type_group') {
     types = [];
     for (var n = 0; n < typeBlock.typeCount_; n++) {
-      types = types.concat(getTypesFrom_(typeBlock, 'TYPE' + n));
+      types = types.concat(Bdf.Factory.getTypesFrom_(typeBlock, 'TYPE' + n));
     }
     // Remove duplicates.
     var hash = Object.create(null);
@@ -509,283 +463,21 @@ function getTypesFrom_(block, name) {
       hash[types[n]] = true;
     }
   } else {
-    types = [escapeString(typeBlock.valueType)];
+    types = [Bdf.escapeString(typeBlock.valueType)];
   }
   return types;
-}
-
-/**
- * Update the generator code.
- * @param {!Blockly.Block} block Rendered block in preview workspace.
- */
-function updateGenerator(block) {
-  function makeVar(root, name) {
-    name = name.toLowerCase().replace(/\W/g, '_');
-    return '  var ' + root + '_' + name;
-  }
-  var language = "Arduino";
-  var code = [];
-  code.push("Blockly." + language + "['" + block.type +
-            "'] = function(block) {");
-
-  // Generate getters for any fields or inputs.
-  for (var i = 0, input; input = block.inputList[i]; i++) {
-    for (var j = 0, field; field = input.fieldRow[j]; j++) {
-      var name = field.name;
-      if (!name) {
-        continue;
-      }
-      if (field instanceof Blockly.FieldVariable) {
-        // Subclass of Blockly.FieldDropdown, must test first.
-        code.push(makeVar('variable', name) +
-                  " = Blockly." + language +
-                  ".variableDB_.getName(block.getFieldValue('" + name +
-                  "'), Blockly.Variables.NAME_TYPE);");
-      } else if (field instanceof Blockly.FieldAngle) {
-        // Subclass of Blockly.FieldTextInput, must test first.
-        code.push(makeVar('angle', name) +
-                  " = block.getFieldValue('" + name + "');");
-      } else if (Blockly.FieldDate && field instanceof Blockly.FieldDate) {
-        // Blockly.FieldDate may not be compiled into Blockly.
-        code.push(makeVar('date', name) +
-                  " = block.getFieldValue('" + name + "');");
-      } else if (field instanceof Blockly.FieldColour) {
-        code.push(makeVar('colour', name) +
-                  " = block.getFieldValue('" + name + "');");
-      } else if (field instanceof Blockly.FieldCheckbox) {
-        code.push(makeVar('checkbox', name) +
-                  " = block.getFieldValue('" + name + "') == 'TRUE';");
-      } else if (field instanceof Blockly.FieldDropdown) {
-        code.push(makeVar('dropdown', name) +
-                  " = block.getFieldValue('" + name + "');");
-      } else if (field instanceof Blockly.FieldTextInput) {
-        code.push(makeVar('text', name) +
-                  " = block.getFieldValue('" + name + "');");
-      }
-    }
-    var name = input.name;
-    if (name) {
-      if (input.type == Blockly.INPUT_VALUE) {
-        code.push(makeVar('value', name) +
-                  " = Blockly." + language + ".valueToCode(block, '" + name +
-                  "', Blockly." + language + ".ORDER_ATOMIC);");
-      } else if (input.type == Blockly.NEXT_STATEMENT) {
-        code.push(makeVar('statements', name) +
-                  " = Blockly." + language + ".statementToCode(block, '" +
-                  name + "');");
-      }
-    }
-  }
-  code.push("  // TODO: Assemble " + language + " into code variable.");
-  code.push("  var code = \'...\';");
-  if (block.outputConnection) {
-    code.push("  // TODO: Change ORDER_NONE to the correct strength.");
-    code.push("  return [code, Blockly." + language + ".ORDER_NONE];");
-  } else {
-    code.push("  return code;");
-  }
-  code.push("};");
-
-  injectCode(code.join('\n'), 'generatorPre');
-}
-
-/**
- * Existing direction ('ltr' vs 'rtl') of preview.
- */
-var oldDir = null;
-
-/**
- * Update the preview display.
- */
-function updatePreview() {
-  // Toggle between LTR/RTL if needed (also used in first display).
-  var newDir = document.getElementById('direction').value;
-  if (oldDir != newDir) {
-    if (previewWorkspace) {
-      previewWorkspace.dispose();
-    }
-    var rtl = newDir == 'rtl';
-    previewWorkspace = Blockly.inject('preview',
-        {rtl: rtl,
-         media: 'blockly/media/',
-         scrollbars: true});
-    oldDir = newDir;
-  }
-  previewWorkspace.clear();
-
-  // Fetch the code and determine its format (JSON or JavaScript).
-  var format = document.getElementById('format').value;
-  if (format == 'Manual') {
-    var code = document.getElementById('languageTA').value;
-    // If the code is JSON, it will parse, otherwise treat as JS.
-    try {
-      JSON.parse(code);
-      format = 'JSON';
-    } catch (e) {
-      format = 'JavaScript';
-    }
-  } else {
-    var code = document.getElementById('languagePre').textContent;
-  }
-  if (!code.trim()) {
-    // Nothing to render.  Happens while cloud storage is loading.
-    return;
-  }
-
-  // Backup Blockly.Blocks object so that main workspace and preview don't
-  // collide if user creates a 'factory_base' block, for instance.
-  var backupBlocks = Blockly.Blocks;
-  try {
-    // Make a shallow copy.
-    Blockly.Blocks = {};
-    for (var prop in backupBlocks) {
-      Blockly.Blocks[prop] = backupBlocks[prop];
-    }
-
-    if (format == 'JSON') {
-      var json = JSON.parse(code);
-      Blockly.Blocks[json.id || UNNAMED] = {
-        init: function() {
-          this.jsonInit(json);
-        }
-      };
-    } else if (format == 'JavaScript') {
-      eval(code);
-    } else {
-      throw 'Unknown format: ' + format;
-    }
-
-    // Look for a block on Blockly.Blocks that does not match the backup.
-    var blockType = null;
-    for (var type in Blockly.Blocks) {
-      if (typeof Blockly.Blocks[type].init == 'function' &&
-          Blockly.Blocks[type] != backupBlocks[type]) {
-        blockType = type;
-        break;
-      }
-    }
-    if (!blockType) {
-      return;
-    }
-
-    // Create the preview block.
-    var previewBlock = Blockly.Block.obtain(previewWorkspace, blockType);
-    previewBlock.initSvg();
-    previewBlock.render();
-    previewBlock.setMovable(false);
-    previewBlock.setDeletable(false);
-    previewBlock.moveBy(15, 10);
-
-    updateGenerator(previewBlock);
-  } finally {
-    Blockly.Blocks = backupBlocks;
-  }
-}
-
-/**
- * Inject code into a pre tag, with syntax highlighting.
- * Safe from HTML/script injection.
- * @param {string} code Lines of code.
- * @param {string} id ID of <pre> element to inject into.
- */
-function injectCode(code, id) {
-  Blockly.removeAllRanges();
-  var pre = document.getElementById(id);
-  pre.textContent = code;
-  code = pre.innerHTML;
-  code = prettyPrintOne(code, 'js');
-  pre.innerHTML = code;
-}
+};
 
 /**
  * Return the uneditable container block that everything else attaches to.
  * @return {Blockly.Block}
  */
-function getRootBlock() {
-  var blocks = mainWorkspace.getTopBlocks(false);
+Bdf.Factory.getRootBlock = function() {
+  var blocks = Bdf.Factory.workspace.getTopBlocks(false);
   for (var i = 0, block; block = blocks[i]; i++) {
     if (block.type == 'factory_base') {
       return block;
     }
   }
   return null;
-}
-
-/**
- * Disable the link button if the format is 'Manual', enable otherwise.
- */
-function disableEnableLink() {
-  var linkButton = document.getElementById('linkButton');
-  linkButton.disabled = document.getElementById('format').value == 'Manual';
-}
-
-/**
- * Initialize Blockly and layout.  Called on page load.
- */
-function init() {
-  if ('BlocklyStorage' in window) {
-    BlocklyStorage.HTTPREQUEST_ERROR =
-        'There was a problem with the request.\n';
-    BlocklyStorage.LINK_ALERT =
-        'Share your blocks with this link:\n\n%1';
-    BlocklyStorage.HASH_ERROR =
-        'Sorry, "%1" doesn\'t correspond with any saved Blockly file.';
-    BlocklyStorage.XML_ERROR = 'Could not load your saved file.\n'+
-        'Perhaps it was created with a different version of Blockly?';
-    var linkButton = document.getElementById('linkButton');
-    linkButton.style.display = 'inline-block';
-    linkButton.addEventListener('click',
-        function() {BlocklyStorage.link(mainWorkspace);});
-    disableEnableLink();
-  }
-
-  document.getElementById('helpButton').addEventListener('click',
-    function() {
-      open('https://developers.google.com/blockly/custom-blocks/block-factory',
-           'BlockFactoryHelp');
-    });
-
-  var expandList = [
-    document.getElementById('blockly'),
-    document.getElementById('blocklyMask'),
-    document.getElementById('preview'),
-    document.getElementById('languagePre'),
-    document.getElementById('languageTA'),
-    document.getElementById('generatorPre')
-  ];
-  var onresize = function(e) {
-    for (var i = 0, expand; expand = expandList[i]; i++) {
-      expand.style.width = (expand.parentNode.offsetWidth - 2) + 'px';
-      expand.style.height = (expand.parentNode.offsetHeight - 2) + 'px';
-    }
-  };
-  onresize();
-  window.addEventListener('resize', onresize);
-
-  var toolbox = document.getElementById('toolbox');
-  mainWorkspace = Blockly.inject('blockly',
-      {toolbox: toolbox, media: 'blockly/media/'});
-
-  // Create the root block.
-  if ('BlocklyStorage' in window && window.location.hash.length > 1) {
-    BlocklyStorage.retrieveXml(window.location.hash.substring(1),
-                               mainWorkspace);
-  } else {
-    var rootBlock = Blockly.Block.obtain(mainWorkspace, 'factory_base');
-    rootBlock.initSvg();
-    rootBlock.render();
-    rootBlock.setMovable(false);
-    rootBlock.setDeletable(false);
-  }
-
-  mainWorkspace.addChangeListener(updateLanguage);
-  document.getElementById('direction')
-      .addEventListener('change', updatePreview);
-  document.getElementById('languageTA')
-      .addEventListener('change', updatePreview);
-  document.getElementById('languageTA')
-      .addEventListener('keyup', updatePreview);
-  document.getElementById('format')
-      .addEventListener('change', formatChange);
-}
-window.addEventListener('load', init);
+};
