@@ -72,6 +72,3 @@ button>* {
 button:hover:not(:disabled)>* {
   opacity: 1;
 }
-#linkButton {
-  display: none;
-}

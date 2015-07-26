@@ -48,7 +48,6 @@ Bdf.formatChange = function() {
     languagePre.style.display = 'block';
     Bdf.updateLanguage();
   }
-  Bdf.disableEnableLink();
 };
 
 /**
@@ -87,14 +86,6 @@ Bdf.escapeString = function(string) {
 };
 
 /**
- * Disable the link button if the format is 'Manual', enable otherwise.
- */
-Bdf.disableEnableLink = function() {
-  var linkButton = document.getElementById('linkButton');
-  linkButton.disabled = document.getElementById('format').value == 'Manual';
-};
-
-/**
  * Existing direction ('ltr' vs 'rtl') of preview.
  */
 Bdf.oldDir = null;
@@ -103,22 +94,6 @@ Bdf.oldDir = null;
  * Initialize Blockly and layout.  Called on page load.
  */
 Bdf.init = function() {
-  if ('BlocklyStorage' in window) {
-    BlocklyStorage.HTTPREQUEST_ERROR =
-        'There was a problem with the request.\n';
-    BlocklyStorage.LINK_ALERT =
-        'Share your blocks with this link:\n\n%1';
-    BlocklyStorage.HASH_ERROR =
-        'Sorry, "%1" doesn\'t correspond with any saved Blockly file.';
-    BlocklyStorage.XML_ERROR = 'Could not load your saved file.\n' +
-        'Perhaps it was created with a different version of Blockly?';
-    var linkButton = document.getElementById('linkButton');
-    linkButton.style.display = 'inline-block';
-    linkButton.addEventListener('click',
-        function() {BlocklyStorage.link(Bdf.Factory.workspace);});
-    Bdf.disableEnableLink();
-  }
-
   document.getElementById('helpButton').addEventListener('click',
     function() {
       open('https://developers.google.com/blockly/custom-blocks/block-factory',
@@ -147,16 +122,11 @@ Bdf.init = function() {
       {toolbox: toolbox, media: 'blockly/media/'});
 
   // Create the root block.
-  if ('BlocklyStorage' in window && window.location.hash.length > 1) {
-    BlocklyStorage.retrieveXml(window.location.hash.substring(1),
-                               Bdf.Factory.workspace);
-  } else {
-    var rootBlock = Blockly.Block.obtain(Bdf.Factory.workspace, 'factory_base');
-    rootBlock.initSvg();
-    rootBlock.render();
-    rootBlock.setMovable(false);
-    rootBlock.setDeletable(false);
-  }
+  var rootBlock = Blockly.Block.obtain(Bdf.Factory.workspace, 'factory_base');
+  rootBlock.initSvg();
+  rootBlock.render();
+  rootBlock.setMovable(false);
+  rootBlock.setDeletable(false);
 
   Bdf.Factory.workspace.addChangeListener(Bdf.updateLanguage);
   document.getElementById('direction')
