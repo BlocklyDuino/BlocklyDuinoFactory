@@ -2,7 +2,7 @@
  * BlocklyDuinoFactory Factory module
  *
  * Copyright 2015 BlocklyDuino https://github.com/BlocklyDuino
- * 
+ *
  * Based on the Block Factory Blockly demo Copyright 2012 Google Inc.
  * https://developers.google.com/blockly/
  *
@@ -37,21 +37,27 @@ Bdf.Factory = Bdf.Factory || {};
 Bdf.Factory.workspace = null;
 
 /**
- * Name of block if not named.
+ * Inject Blockly into the given element and creates the Root block.
+ * @param {!string|!Element} element HTML element name or Element to inject the
+ *     factory Blockly workspace.
+ * @param {!Element} toolbox XML element with the Blockly toolbox.
  */
-Bdf.Factory.UNNAMED = 'unnamed';
+Bdf.Factory.injectBlockly = function(element, toolbox) {
+  Bdf.Factory.workspace = Blockly.inject('blockly',
+      {toolbox: toolbox,
+       media: 'blockly/media/' });
+  Bdf.Factory.createRootBlock_();
+};
 
 /**
  * Update the language code as JSON.
- * @param {string} blockType Name of block.
- * @param {!Blockly.Block} rootBlock Factory_base block.
  * @return {string} Generated language code.
- * @private
  */
-Bdf.Factory.formatJson_ = function(blockType, rootBlock) {
+Bdf.Factory.formatJson = function() {
+  var rootBlock = Bdf.Factory.getRootBlock_();
   var JS = {};
   // ID is not used by Blockly, but may be used by a loader.
-  JS.id = blockType;
+  JS.id = Bdf.Factory.getBlockName_();
   // Generate inputs.
   var message = [];
   var args = [];
@@ -75,7 +81,7 @@ Bdf.Factory.formatJson_ = function(blockType, rootBlock) {
       if (contentsBlock.type != 'input_dummy') {
         input.name = contentsBlock.getFieldValue('INPUTNAME');
       }
-      var check = JSON.parse(Bdf.Factory.getOptTypesFrom(
+      var check = JSON.parse(Bdf.Factory.getOptTypesFrom_(
           contentsBlock, 'TYPE') || 'null');
       if (check) {
         input.check = check;
@@ -115,25 +121,25 @@ Bdf.Factory.formatJson_ = function(blockType, rootBlock) {
   switch (rootBlock.getFieldValue('CONNECTIONS')) {
     case 'LEFT':
       JS.output = JSON.parse(
-          Bdf.Factory.getOptTypesFrom(rootBlock, 'OUTPUTTYPE') || 'null');
+          Bdf.Factory.getOptTypesFrom_(rootBlock, 'OUTPUTTYPE') || 'null');
       break;
     case 'BOTH':
       JS.previousStatement =
           JSON.parse(
-              Bdf.Factory.getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
+              Bdf.Factory.getOptTypesFrom_(rootBlock, 'TOPTYPE') || 'null');
       JS.nextStatement =
           JSON.parse(
-              Bdf.Factory.getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
+              Bdf.Factory.getOptTypesFrom_(rootBlock, 'BOTTOMTYPE') || 'null');
       break;
     case 'TOP':
       JS.previousStatement =
           JSON.parse(
-              Bdf.Factory.getOptTypesFrom(rootBlock, 'TOPTYPE') || 'null');
+              Bdf.Factory.getOptTypesFrom_(rootBlock, 'TOPTYPE') || 'null');
       break;
     case 'BOTTOM':
       JS.nextStatement =
           JSON.parse(
-              Bdf.Factory.getOptTypesFrom(rootBlock, 'BOTTOMTYPE') || 'null');
+              Bdf.Factory.getOptTypesFrom_(rootBlock, 'BOTTOMTYPE') || 'null');
       break;
   }
   // Generate colour.
@@ -149,14 +155,12 @@ Bdf.Factory.formatJson_ = function(blockType, rootBlock) {
 
 /**
  * Update the language code as JavaScript.
- * @param {string} blockType Name of block.
- * @param {!Blockly.Block} rootBlock Factory_base block.
  * @return {string} Generated language code.
- * @private
  */
-Bdf.Factory.formatJavaScript_ = function(blockType, rootBlock) {
+Bdf.Factory.formatJavaScript = function() {
+  var rootBlock = Bdf.Factory.getRootBlock_();
   var code = [];
-  code.push("Blockly.Blocks['" + blockType + "'] = {");
+  code.push("Blockly.Blocks['" + Bdf.Factory.getBlockName_() + "'] = {");
   code.push('  init: function() {');
   // Generate inputs.
   var TYPES = {'input_value': 'appendValueInput',
@@ -168,10 +172,11 @@ Bdf.Factory.formatJavaScript_ = function(blockType, rootBlock) {
       var name = '';
       // Dummy inputs don't have names.  Other inputs do.
       if (contentsBlock.type != 'input_dummy') {
-        name = Bdf.escapeString(contentsBlock.getFieldValue('INPUTNAME'));
+        name = Bdf.Factory.escapeString_(
+            contentsBlock.getFieldValue('INPUTNAME'));
       }
       code.push('    this.' + TYPES[contentsBlock.type] + '(' + name + ')');
-      var check = Bdf.Factory.getOptTypesFrom(contentsBlock, 'TYPE');
+      var check = Bdf.Factory.getOptTypesFrom_(contentsBlock, 'TYPE');
       if (check) {
         code.push('        .setCheck(' + check + ')');
       }
@@ -237,7 +242,8 @@ Bdf.Factory.formatJavaScript_ = function(blockType, rootBlock) {
  * @private
  */
 Bdf.Factory.connectionLineJs_ = function(functionName, typeName) {
-  var type = Bdf.Factory.getOptTypesFrom(Bdf.Factory.getRootBlock(), typeName);
+  var type = Bdf.Factory.getOptTypesFrom_(
+      Bdf.Factory.getRootBlock_(), typeName);
   if (type) {
     type = ', ' + type;
   } else {
@@ -259,65 +265,67 @@ Bdf.Factory.getFieldsJs_ = function(block) {
       switch (block.type) {
         case 'field_static':
           // Result: 'hello'
-          fields.push(Bdf.escapeString(block.getFieldValue('TEXT')));
+          fields.push(Bdf.Factory.escapeString_(block.getFieldValue('TEXT')));
           break;
         case 'field_input':
           // Result: new Blockly.FieldTextInput('Hello'), 'GREET'
           fields.push('new Blockly.FieldTextInput(' +
-              Bdf.escapeString(block.getFieldValue('TEXT')) + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('TEXT')) + '), ' +
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_angle':
           // Result: new Blockly.FieldAngle(90), 'ANGLE'
           fields.push('new Blockly.FieldAngle(' +
-              Bdf.escapeString(block.getFieldValue('ANGLE')) + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('ANGLE')) + '), ' +
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_checkbox':
           // Result: new Blockly.FieldCheckbox('TRUE'), 'CHECK'
           fields.push('new Blockly.FieldCheckbox(' +
-              Bdf.escapeString(block.getFieldValue('CHECKED')) + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('CHECKED')) +
+              '), ' +
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_colour':
           // Result: new Blockly.FieldColour('#ff0000'), 'COLOUR'
           fields.push('new Blockly.FieldColour(' +
-              Bdf.escapeString(block.getFieldValue('COLOUR')) + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('COLOUR')) + '), ' +
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_date':
           // Result: new Blockly.FieldDate('2015-02-04'), 'DATE'
           fields.push('new Blockly.FieldDate(' +
-              Bdf.escapeString(block.getFieldValue('DATE')) + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('DATE')) + '), ' +
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_variable':
           // Result: new Blockly.FieldVariable('item'), 'VAR'
-          var varname = Bdf.escapeString(block.getFieldValue('TEXT') || null);
+          var varname = Bdf.Factory.escapeString_(
+              block.getFieldValue('TEXT') || null);
           fields.push('new Blockly.FieldVariable(' + varname + '), ' +
-              Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+              Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           break;
         case 'field_dropdown':
           // Result:
           // new Blockly.FieldDropdown([['yes', '1'], ['no', '0']]), 'TOGGLE'
           var options = [];
           for (var i = 0; i < block.optionCount_; i++) {
-            options[i] = '[' + Bdf.escapeString(
+            options[i] = '[' + Bdf.Factory.escapeString_(
                 block.getFieldValue('USER' + i)) + ', ' +
-                Bdf.escapeString(block.getFieldValue('CPU' + i)) + ']';
+                Bdf.Factory.escapeString_(block.getFieldValue('CPU' + i)) + ']';
           }
           if (options.length) {
             fields.push('new Blockly.FieldDropdown([' +
                 options.join(', ') + ']), ' +
-                Bdf.escapeString(block.getFieldValue('FIELDNAME')));
+                Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
           }
           break;
         case 'field_image':
           // Result: new Blockly.FieldImage('http://...', 80, 60)
-          var src = Bdf.escapeString(block.getFieldValue('SRC'));
+          var src = Bdf.Factory.escapeString_(block.getFieldValue('SRC'));
           var width = Number(block.getFieldValue('WIDTH'));
           var height = Number(block.getFieldValue('HEIGHT'));
-          var alt = Bdf.escapeString(block.getFieldValue('ALT'));
+          var alt = Bdf.Factory.escapeString_(block.getFieldValue('ALT'));
           fields.push('new Blockly.FieldImage(' +
               src + ', ' + width + ', ' + height + ', ' + alt + ')');
           break;
@@ -326,7 +334,7 @@ Bdf.Factory.getFieldsJs_ = function(block) {
     block = block.nextConnection && block.nextConnection.targetBlock();
   }
   return fields;
-}
+};
 
 /**
  * Returns field strings and any config.
@@ -334,7 +342,7 @@ Bdf.Factory.getFieldsJs_ = function(block) {
  * @return {!Array.<string|!Object>} Array of static text and field configs.
  * @private
  */
-Bdf.Factory.getFieldsJson_= function(block) {
+Bdf.Factory.getFieldsJson_ = function(block) {
   var fields = [];
   while (block) {
     if (!block.disabled && !block.getInheritedDisabled()) {
@@ -421,8 +429,9 @@ Bdf.Factory.getFieldsJson_= function(block) {
  * @param {!Blockly.Block} block Block with input.
  * @param {string} name Name of the input.
  * @return {?string} String defining the types.
+ * @private
  */
-Bdf.Factory.getOptTypesFrom = function(block, name) {
+Bdf.Factory.getOptTypesFrom_ = function(block, name) {
   var types = Bdf.Factory.getTypesFrom_(block, name);
   if (types.length == 0) {
     return undefined;
@@ -448,7 +457,7 @@ Bdf.Factory.getTypesFrom_ = function(block, name) {
   if (!typeBlock || typeBlock.disabled) {
     types = [];
   } else if (typeBlock.type == 'type_other') {
-    types = [Bdf.escapeString(typeBlock.getFieldValue('TYPE'))];
+    types = [Bdf.Factory.escapeString_(typeBlock.getFieldValue('TYPE'))];
   } else if (typeBlock.type == 'type_group') {
     types = [];
     for (var n = 0; n < typeBlock.typeCount_; n++) {
@@ -463,16 +472,29 @@ Bdf.Factory.getTypesFrom_ = function(block, name) {
       hash[types[n]] = true;
     }
   } else {
-    types = [Bdf.escapeString(typeBlock.valueType)];
+    types = [Bdf.Factory.escapeString_(typeBlock.valueType)];
   }
   return types;
 };
 
 /**
+ * Create the uneditable container block that everything else attaches to.
+ * @private
+ */
+Bdf.Factory.createRootBlock_ = function() {
+  var rootBlock = Blockly.Block.obtain(Bdf.Factory.workspace, 'factory_base');
+  rootBlock.initSvg();
+  rootBlock.render();
+  rootBlock.setMovable(false);
+  rootBlock.setDeletable(false);
+};
+
+/**
  * Return the uneditable container block that everything else attaches to.
  * @return {Blockly.Block}
+ * @private
  */
-Bdf.Factory.getRootBlock = function() {
+Bdf.Factory.getRootBlock_ = function() {
   var blocks = Bdf.Factory.workspace.getTopBlocks(false);
   for (var i = 0, block; block = blocks[i]; i++) {
     if (block.type == 'factory_base') {
@@ -480,4 +502,31 @@ Bdf.Factory.getRootBlock = function() {
     }
   }
   return null;
+};
+
+/**
+ * Return the block name defined in the factory Root Block.
+ * @return {!string} Name of the generated block.
+ * @private
+ */
+Bdf.Factory.getBlockName_ = function() {
+  var rootBlock = Bdf.Factory.getRootBlock_();
+  if (!rootBlock) {
+    return;
+  }
+  var blockType = rootBlock.getFieldValue('NAME').trim().toLowerCase();
+  if (!blockType) {
+    blockType = Bdf.UNNAMED;
+  }
+  return blockType.replace(/\W/g, '_').replace(/^(\d)/, '_\\1');
+};
+
+/**
+ * Escape a string.
+ * @param {string} string String to escape.
+ * @return {string} Escaped string surrounded by quotes.
+ * @private
+ */
+Bdf.Factory.escapeString_ = function(string) {
+  return JSON.stringify(string);
 };

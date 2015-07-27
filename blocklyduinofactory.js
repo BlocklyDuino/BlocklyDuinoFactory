@@ -27,9 +27,14 @@
 var Bdf = Bdf || {};
 
 /**
- * Change the language code format.
+ * Name of block if not named.
  */
-Bdf.formatChange = function() {
+Bdf.UNNAMED = 'unnamed';
+
+/**
+ * Change the block definition code language format.
+ */
+Bdf.definitionFormatChange = function() {
   var mask = document.getElementById('blocklyMask');
   var languagePre = document.getElementById('languagePre');
   var languageTA = document.getElementById('languageTA');
@@ -41,57 +46,93 @@ Bdf.formatChange = function() {
     var code = languagePre.textContent.trim();
     languageTA.value = code;
     languageTA.focus();
-    Bdf.Preview.updatePreview();
+    Bdf.updatePreview();
   } else {
     mask.style.display = 'none';
     languageTA.style.display = 'none';
     languagePre.style.display = 'block';
-    Bdf.updateLanguage();
+    Bdf.updateDefinitionCode();
   }
 };
 
 /**
- * Update the language code based on constructs made in Blockly.
+ * Update the block definition code based on constructs made in the block
+ * definition workspace.
  */
-Bdf.updateLanguage = function() {
-  var rootBlock = Bdf.Factory.getRootBlock();
-  if (!rootBlock) {
-    return;
-  }
-  var blockType = rootBlock.getFieldValue('NAME').trim().toLowerCase();
-  if (!blockType) {
-    blockType = UNNAMED;
-  }
-  blockType = blockType.replace(/\W/g, '_').replace(/^(\d)/, '_\\1');
+Bdf.updateDefinitionCode = function() {
   switch (document.getElementById('format').value) {
     case 'JSON':
-      var code = Bdf.Factory.formatJson_(blockType, rootBlock);
+      var code = Bdf.Factory.formatJson();
       break;
     case 'JavaScript':
-      var code = Bdf.Factory.formatJavaScript_(
-          blockType, rootBlock);
+      var code = Bdf.Factory.formatJavaScript();
       break;
   }
-  Bdf.Generator.injectCode(code, 'languagePre');
-  Bdf.Preview.updatePreview();
+  Bdf.injectCode(code, 'languagePre');
+  Bdf.updatePreview();
 };
 
 /**
- * Escape a string.
- * @param {string} string String to escape.
- * @return {string} Escaped string surrounded by quotes.
+ * Update the preview workspace with the new block, which code has been
+ * generated and injected the HTLM DOM.
+ * @return {Blocly.Block} Block generated in the Preview workspace.
  */
-Bdf.escapeString = function(string) {
-  return JSON.stringify(string);
+Bdf.updatePreview = function() {
+  // Fetch the direction
+  var newDir = document.getElementById('direction').value;
+  // Fetch the code and determine its format (JSON or JavaScript).
+  var format = document.getElementById('format').value;
+  if (format == 'Manual') {
+    var code = document.getElementById('languageTA').value;
+    // If the code is JSON, it will parse, otherwise treat as JS.
+    try {
+      JSON.parse(code);
+      format = 'JSON';
+    } catch (e) {
+      format = 'JavaScript';
+    }
+  } else {
+    var code = document.getElementById('languagePre').textContent;
+  }
+  if (!code.trim()) {
+    // Nothing to render.  Happens while cloud storage is loading.
+    return;
+  }
+  var previewBlock = Bdf.Preview.update(newDir, format, code);
+  return previewBlock;
 };
 
 /**
- * Existing direction ('ltr' vs 'rtl') of preview.
+ * Update the all block related activities: Generates the block definition code
+ * from the definition workspace, updates the preview workspace with the code,
+ * and generates the JavaScript code for the Blockly Arduino Generator.
  */
-Bdf.oldDir = null;
+Bdf.updateBlock = function() {
+  Bdf.updateDefinitionCode();
+  var previewBlock = Bdf.updatePreview();
+  if (previewBlock) {
+    var generatorCode = Bdf.Generator.updateGenerator(previewBlock);
+    Bdf.injectCode(generatorCode, 'generatorPre');
+  }
+};
 
 /**
- * Initialize Blockly and layout.  Called on page load.
+ * Inject code into a pre tag, with syntax highlighting.
+ * Safe from HTML/script injection.
+ * @param {string} code Lines of code.
+ * @param {string} id ID of <pre> element to inject into.
+ */
+Bdf.injectCode = function(code, id) {
+  Blockly.removeAllRanges();
+  var pre = document.getElementById(id);
+  pre.textContent = code;
+  code = pre.innerHTML;
+  code = prettyPrintOne(code, 'js');
+  pre.innerHTML = code;
+};
+
+/**
+ * Initialise Blockly and layout. Called on page load.
  */
 Bdf.init = function() {
   document.getElementById('helpButton').addEventListener('click',
@@ -117,28 +158,22 @@ Bdf.init = function() {
   onresize();
   window.addEventListener('resize', onresize);
 
-  var toolbox = document.getElementById('toolbox');
-  Bdf.Factory.workspace = Blockly.inject('blockly',
-      {toolbox: toolbox, media: 'blockly/media/'});
+  Bdf.Factory.injectBlockly('blockly', document.getElementById('toolbox'));
 
-  // Create the root block.
-  var rootBlock = Blockly.Block.obtain(Bdf.Factory.workspace, 'factory_base');
-  rootBlock.initSvg();
-  rootBlock.render();
-  rootBlock.setMovable(false);
-  rootBlock.setDeletable(false);
-
-  Bdf.Factory.workspace.addChangeListener(Bdf.updateLanguage);
+  Bdf.Factory.workspace.addChangeListener(Bdf.updateBlock);
   document.getElementById('direction')
-      .addEventListener('change', Bdf.Preview.updatePreview);
+      .addEventListener('change', Bdf.updatePreview);
   document.getElementById('languageTA')
-      .addEventListener('change', Bdf.Preview.updatePreview);
+      .addEventListener('change', Bdf.updatePreview);
   document.getElementById('languageTA')
-      .addEventListener('keyup', Bdf.Preview.updatePreview);
+      .addEventListener('keyup', Bdf.updatePreview);
   document.getElementById('format')
-      .addEventListener('change', Bdf.formatChange);
-}
+      .addEventListener('change', Bdf.definitionFormatChange);
+};
 
+/**
+ * Bind the initialisation function to the page load event.
+ */
 window.addEventListener('load', function load(event) {
   window.removeEventListener('load', load, false);
   Bdf.init();

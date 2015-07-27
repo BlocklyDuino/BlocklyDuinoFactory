@@ -37,12 +37,22 @@ Bdf.Preview = Bdf.Preview || {};
 Bdf.Preview.workspace = null;
 
 /**
- * Update the preview display.
+ * Existing direction ('ltr' vs 'rtl') of preview.
  */
-Bdf.Preview.updatePreview = function() {
+Bdf.oldDir = null;
+
+/**
+ * Update the preview workspace.
+ * @param {!string} newDir Indicates Left-to-Right ('ltr') or Right-to-Left
+ *     ('rtl') Blockly workspace direction.
+ * @param {!string} format Indicates the input JavaScript format for the code.
+ *     Options are 'JSON' or 'JavaScript'.
+ * @param {!string} code Block definition JavaScript code.
+ * @return {Blockly.Block} The block generated from the input code.
+ */
+Bdf.Preview.update = function(newDir, format, code) {
   // Toggle between LTR/RTL if needed (also used in first display).
-  var newDir = document.getElementById('direction').value;
-  if (Bdf.oldDir != newDir) {
+  if (Bdf.Preview.oldDir != newDir) {
     if (Bdf.Preview.workspace) {
       Bdf.Preview.workspace.dispose();
     }
@@ -51,28 +61,9 @@ Bdf.Preview.updatePreview = function() {
         {rtl: rtl,
          media: 'blockly/media/',
          scrollbars: true});
-    Bdf.oldDir = newDir;
+    Bdf.Preview.oldDir = newDir;
   }
   Bdf.Preview.workspace.clear();
-
-  // Fetch the code and determine its format (JSON or JavaScript).
-  var format = document.getElementById('format').value;
-  if (format == 'Manual') {
-    var code = document.getElementById('languageTA').value;
-    // If the code is JSON, it will parse, otherwise treat as JS.
-    try {
-      JSON.parse(code);
-      format = 'JSON';
-    } catch (e) {
-      format = 'JavaScript';
-    }
-  } else {
-    var code = document.getElementById('languagePre').textContent;
-  }
-  if (!code.trim()) {
-    // Nothing to render.  Happens while cloud storage is loading.
-    return;
-  }
 
   // Backup Blockly.Blocks object so that main workspace and preview don't
   // collide if user creates a 'factory_base' block, for instance.
@@ -86,7 +77,7 @@ Bdf.Preview.updatePreview = function() {
 
     if (format == 'JSON') {
       var json = JSON.parse(code);
-      Blockly.Blocks[json.id || UNNAMED] = {
+      Blockly.Blocks[json.id || Bdf.UNNAMED] = {
         init: function() {
           this.jsonInit(json);
         }
@@ -117,9 +108,9 @@ Bdf.Preview.updatePreview = function() {
     previewBlock.setMovable(false);
     previewBlock.setDeletable(false);
     previewBlock.moveBy(15, 10);
-
-    Bdf.Generator.updateGenerator(previewBlock);
   } finally {
     Blockly.Blocks = backupBlocks;
   }
+
+  return previewBlock;
 };

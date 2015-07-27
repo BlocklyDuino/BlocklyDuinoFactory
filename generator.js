@@ -36,6 +36,7 @@ Bdf.Generator.workspace = null;
 /**
  * Update the generator code.
  * @param {!Blockly.Block} block Rendered block in preview workspace.
+ * @return {!string} Generated JavaScript code for the Arduino code Generator.
  */
 Bdf.Generator.updateGenerator = function(block) {
   function makeVar(root, name) {
@@ -105,20 +106,5 @@ Bdf.Generator.updateGenerator = function(block) {
   }
   code.push("};");
 
-  Bdf.Generator.injectCode(code.join('\n'), 'generatorPre');
-};
-
-/**
- * Inject code into a pre tag, with syntax highlighting.
- * Safe from HTML/script injection.
- * @param {string} code Lines of code.
- * @param {string} id ID of <pre> element to inject into.
- */
-Bdf.Generator.injectCode = function(code, id) {
-  Blockly.removeAllRanges();
-  var pre = document.getElementById(id);
-  pre.textContent = code;
-  code = pre.innerHTML;
-  code = prettyPrintOne(code, 'js');
-  pre.innerHTML = code;
+  return code.join('\n');
 };
