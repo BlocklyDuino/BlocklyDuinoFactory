@@ -43,7 +43,7 @@ Bdf.Factory.workspace = null;
  * @param {!Element} toolbox XML element with the Blockly toolbox.
  */
 Bdf.Factory.injectBlockly = function(element, toolbox) {
-  Bdf.Factory.workspace = Blockly.inject('blockly',
+  Bdf.Factory.workspace = Blockly.inject(element,
       {toolbox: toolbox,
        media: 'blockly/media/' });
   Bdf.Factory.createRootBlock_();

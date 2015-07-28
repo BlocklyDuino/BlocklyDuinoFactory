@@ -34,6 +34,18 @@ Bdf.Generator = Bdf.Generator || {};
 Bdf.Generator.workspace = null;
 
 /**
+ * Inject Blockly into the given element.
+ * @param {!string|!Element} element HTML element name or Element to inject the
+ *     generator Blockly workspace.
+ * @param {!Element} toolbox XML element with the Blockly toolbox.
+ */
+Bdf.Generator.injectBlockly = function(element, toolbox) {
+  Bdf.Generator.workspace = Blockly.inject(element,
+      {toolbox: toolbox,
+       media: 'blockly/media/' });
+};
+
+/**
  * Update the generator code.
  * @param {!Blockly.Block} block Rendered block in preview workspace.
  * @return {!string} Generated JavaScript code for the Arduino code Generator.

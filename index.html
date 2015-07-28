@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="prettify/prettify.css">
   <script src="prettify/prettify.js"></script>
   <script src="blockly/blockly_compressed.js"></script>
+  <script src="blockly/blocks_compressed.js"></script>
+  <script src="blockly/arduino_compressed.js"></script>
   <script src="blockly/msg/messages.js"></script>
   <script src="factory_blocks.js"></script>
   <script src="generator.js"></script>
@@ -18,6 +20,7 @@
 
 <body>
   <table>
+    <!-- Firt row contains the title and buttons. -->
     <tr>
       <td width="50%" height="5%">
         <h1>BlocklyDuino: Block Factory</h1>
@@ -25,14 +28,6 @@
       <td width="50%" height="5%">
         <table>
           <tr>
-            <td style="vertical-align: bottom;">
-              <h3>Preview:
-                <select id="direction">
-                  <option value="ltr">LTR</option>
-                  <option value="rtl">RTL</option>
-                </select>
-              </h3>
-            </td>
             <td style="vertical-align: middle; text-align: right;">
               <button id="helpButton" title="View documentation in new window.">
                 <span>Help</span>
@@ -42,20 +37,40 @@
         </table>
       </td>
     </tr>
+    <!-- Second row has the rest of the content in two columns. -->
     <tr>
-      <td width="50%" height="95%" style="padding: 2px;">
-        <div id="blockly"></div>
-        <div id="blocklyMask"></div>
-      </td>
       <td width="50%" height="95%">
+        <!-- Left column table contains the define and generate workspaces. -->
         <table>
           <tr>
-            <td height="30%">
-              <div id="preview"></div>
+            <td height="4%" class="bottom_align">
+              <h3>Definition workspace:</h3>
             </td>
           </tr>
           <tr>
-            <td height="5%">
+            <td height="46%">
+              <div id="blocklyFactory"></div>
+              <div id="blocklyFactoryMask"></div>    
+            </td>
+          </tr>
+          <tr>
+            <td height="4%" class="bottom_align">
+              <h3>Generator workspace:</h3>
+            </td>
+          </tr>
+          <tr>
+            <td height="46%">
+              <div id="blocklyGenerator"></div>
+              <div id="blocklyGeneratorMask"></div>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td width="50%" height="95%">
+        <!-- Right column table contains the generated code and preview. -->
+        <table>
+          <tr>
+            <td height="4%" class="bottom_align">
               <h3>Language code:
                 <select id="format">
                   <option value="JavaScript">JavaScript</option>
@@ -66,18 +81,33 @@
             </td>
           </tr>
           <tr>
-            <td height="30%">
+            <td height="34%">
               <pre id="languagePre"></pre>
               <textarea id="languageTA"></textarea>
             </td>
           </tr>
           <tr>
-            <td height="5%">
+            <td height="4%" class="bottom_align">
+              <h3>Preview:
+                <select id="direction">
+                  <option value="ltr">LTR</option>
+                  <option value="rtl">RTL</option>
+                </select>
+              </h3>
+            </td>
+          </tr>
+          <tr>
+            <td height="20%">
+              <div id="preview"></div>
+            </td>
+          </tr>
+          <tr>
+            <td height="4%" class="bottom_align">
               <h3>Generator stub: Arduino</h3>
             </td>
           </tr>
           <tr>
-            <td height="30%">
+            <td height="34%">
               <pre id="generatorPre"></pre>
             </td>
           </tr>
@@ -85,7 +115,8 @@
       </td>
     </tr>
   </table>
-  <xml id="toolbox" style="display: none">
+
+  <xml id="toolboxFactory" style="display: none">
     <category name="Input">
       <block type="input_value"></block>
       <block type="input_statement"></block>
@@ -98,11 +129,6 @@
       <block type="field_dropdown"></block>
       <block type="field_checkbox"></block>
       <block type="field_colour"></block>
-      <!--
-      Date picker commented out since it increases footprint by 60%.
-      Add it only if you need it.  See also goog.require in blockly.js.
-      <block type="field_date"></block>
-      -->
       <block type="field_variable"></block>
       <block type="field_image"></block>
     </category>
@@ -125,6 +151,140 @@
       <block type="colour_hue"><mutation colour="260"></mutation><field name="HUE">260</field></block>
       <block type="colour_hue"><mutation colour="290"></mutation><field name="HUE">290</field></block>
       <block type="colour_hue"><mutation colour="330"></mutation><field name="HUE">330</field></block>
+    </category>
+  </xml>
+  
+  <xml id="toolboxGenerator" style="display: none">
+    <category name="Logic">
+      <block type="controls_if"></block>
+      <block type="logic_compare"></block>
+      <block type="logic_operation"></block>
+      <block type="logic_negate"></block>
+      <block type="logic_null"></block>
+    </category>
+    <category name="Control">
+      <block type="base_delay">
+        <value name="DELAY_TIME">
+          <block type="math_number">
+            <field name="NUM">1000</field>
+          </block>
+        </value>
+      </block>
+      <block type="controls_for">
+        <value name="FROM">
+          <block type="math_number">
+            <field name="NUM">1</field>
+          </block>
+        </value>
+        <value name="TO">
+          <block type="math_number">
+            <field name="NUM">10</field>
+          </block>
+        </value>
+      </block>
+      <block type="controls_whileUntil"></block>
+    </category>
+    <category name="Math">
+      <block type="math_number"></block>
+      <block type="math_arithmetic"></block>
+      <block type="base_map">
+        <value name="DMAX">
+          <block type="math_number">
+            <field name="NUM">180</field>
+          </block>
+        </value>
+      </block>
+    </category>
+    <category name="Text">
+      <block type="text"></block>
+    </category>
+    <category name="Variables" custom="VARIABLE"></category>
+    <category name="Functions" custom="PROCEDURE"></category>
+    <sep></sep>
+    <category name="Input/Output">
+      <block type="inout_highlow"></block>
+      <block type="inout_digital_write"></block>
+      <block type="inout_digital_read"></block>
+      <block type="inout_analog_write">
+        <value name="NUM">
+          <block type="math_number">
+            <field name="NUM">0</field>
+          </block>
+        </value>
+      </block>
+      <block type="inout_analog_read"></block>
+      <block type="serial_print">
+        <value name="CONTENT">
+          <block type="text">
+            <field name="TEXT"></field>
+          </block>
+        </value>
+      </block>
+      <block type="inout_tone">
+        <value name="NUM">
+          <block type="math_number">
+            <field name="NUM">440</field>
+          </block>
+        </value>
+      </block>
+      <block type="inout_notone"></block>
+      <block type="inout_buildin_led"></block>
+    </category>
+    <category name="Servo">
+      <block type="servo_move">
+        <value name="DEGREE">
+          <block type="math_number">
+            <field name="NUM">0</field>
+          </block>
+        </value>
+        <value name="DELAY_TIME">
+          <block type="math_number">
+            <field name="NUM">1000</field>
+          </block>
+        </value>
+      </block>
+      <block type="servo_read_degrees"></block>
+    </category>
+    <category name="Grove Analog">
+      <block type="grove_rotary_angle"></block>
+      <block type="grove_temporature_sensor"></block>
+      <block type="grove_sound_sensor"></block>
+      <block type="grove_thumb_joystick"></block>
+    </category>
+    <category name="Grove">
+      <block type="grove_led"></block>
+      <block type="grove_button"></block>
+      <block type="grove_relay"></block>
+      <block type="grove_tilt_switch"></block>
+      <block type="grove_piezo_buzzer"></block>
+      <block type="grove_pir_motion_sensor"></block>
+      <block type="grove_line_finder"></block>
+      <block type="grove_rgb_led"></block>
+      <block type="grove_ultrasonic_ranger"></block>
+    </category>
+    <category name="Grove LCD">
+      <block type="grove_serial_lcd_print">
+        <value name="TEXT">
+          <block type="text">
+            <field name="TEXT"></field>
+          </block>
+        </value>
+        <value name="TEXT2">
+          <block type="text">
+            <field name="TEXT"></field>
+          </block>
+        </value>
+        <value name="DELAY_TIME">
+          <block type="math_number">
+            <field name="NUM">1000</field>
+          </block>
+        </value>
+      </block>
+      <block type="grove_serial_lcd_power"></block>
+      <block type="grove_serial_lcd_effect"></block>
+    </category>
+    <category name="Grove Motor">
+      <block type="grove_motor_shield"></block>
     </category>
   </xml>
 </body>

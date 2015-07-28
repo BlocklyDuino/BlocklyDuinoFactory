@@ -35,12 +35,14 @@ Bdf.UNNAMED = 'unnamed';
  * Change the block definition code language format.
  */
 Bdf.definitionFormatChange = function() {
-  var mask = document.getElementById('blocklyMask');
+  var maskFactory = document.getElementById('blocklyFactoryMask');
+  var maskGenerator = document.getElementById('blocklyGeneratorMask');
   var languagePre = document.getElementById('languagePre');
   var languageTA = document.getElementById('languageTA');
   if (document.getElementById('format').value == 'Manual') {
     Blockly.hideChaff();
-    mask.style.display = 'block';
+    maskFactory.style.display = 'block';
+    maskGenerator.style.display = 'block';
     languagePre.style.display = 'none';
     languageTA.style.display = 'block';
     var code = languagePre.textContent.trim();
@@ -48,7 +50,8 @@ Bdf.definitionFormatChange = function() {
     languageTA.focus();
     Bdf.updatePreview();
   } else {
-    mask.style.display = 'none';
+    maskFactory.style.display = 'none';
+    maskGenerator.style.display = 'none';
     languageTA.style.display = 'none';
     languagePre.style.display = 'block';
     Bdf.updateDefinitionCode();
@@ -142,8 +145,10 @@ Bdf.init = function() {
     });
 
   var expandList = [
-    document.getElementById('blockly'),
-    document.getElementById('blocklyMask'),
+    document.getElementById('blocklyFactory'),
+    document.getElementById('blocklyFactoryMask'),
+    document.getElementById('blocklyGenerator'),
+    document.getElementById('blocklyGeneratorMask'),
     document.getElementById('preview'),
     document.getElementById('languagePre'),
     document.getElementById('languageTA'),
@@ -158,7 +163,10 @@ Bdf.init = function() {
   onresize();
   window.addEventListener('resize', onresize);
 
-  Bdf.Factory.injectBlockly('blockly', document.getElementById('toolbox'));
+  Bdf.Factory.injectBlockly('blocklyFactory',
+                            document.getElementById('toolboxFactory'));
+  Bdf.Generator.injectBlockly('blocklyGenerator',
+                            document.getElementById('toolboxGenerator'));
 
   Bdf.Factory.workspace.addChangeListener(Bdf.updateBlock);
   document.getElementById('direction')
