@@ -235,6 +235,32 @@ Bdf.Factory.formatJavaScript = function() {
 };
 
 /**
+ * Clears the workspace and loads the input XML into the Factory workspace.
+ * @param {Element} XML DOM to load into the workspace
+ */
+Bdf.Factory.loadXml = function(xmlDom) { 
+  Bdf.Factory.workspace.clear();
+  Blockly.Xml.domToWorkspace(Bdf.Factory.workspace, xmlDom);
+};
+
+/**
+ * Returns the XML for the Factory workspace blocks.
+ * @return {Element} XML DOM from the workspace blocks.
+ */
+Bdf.Factory.getXml = function(xmlDom) {
+  return Blockly.Xml.workspaceToDom(Bdf.Factory.workspace);
+};
+
+/**
+ * Returns the XML for the Factory workspace blocks.
+ * @return {string} XML of the workspace blocks in string format.
+ */
+Bdf.Factory.getXmlString = function() {
+  return Blockly.Xml.domToText(
+      Blockly.Xml.workspaceToDom(Bdf.Factory.workspace));
+};
+
+/**
  * Create JS code required to create a top, bottom, or value connection.
  * @param {string} functionName JavaScript function name.
  * @param {string} typeName Name of type input.

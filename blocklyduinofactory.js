@@ -120,6 +120,72 @@ Bdf.updateBlock = function() {
 };
 
 /**
+ * Creates an XML file with the blocks from the Factory workspace for the user
+ * to download.
+ */
+Bdf.saveXmlFactory = function() {
+  var xmlData = Bdf.Factory.getXmlString();
+  var blob = new Blob([xmlData], {type: 'text/xml'});
+  saveAs(blob, 'blockduinofactory_factory.xml');
+};
+
+/**
+ * Loads an XML file from the user filesystem and injects the blocks into the
+ * Factory workspace.
+ */
+Bdf.openXmlFactory = function() {
+  function openXmlFactoryFile(xmlString) {
+    try {
+      var xml = Blockly.Xml.textToDom(xmlString);
+    } catch (e) {
+      alert('Error parsing XML:\n' + e);
+      return;
+    }
+    Bdf.Factory.loadXml(xml);
+  }
+  // Edit the hiddent file open button listener to the XML read function 
+  Bdf.openUserFile(openXmlFactoryFile);
+};
+
+/**
+ * This function is used as a placeholder for the event listener associated to
+ * the hidden open button, this function reference is  changed based on required
+ * functionality.
+ */
+Bdf.loadFileEventHolder = function(e) {};
+
+/**
+ * Triggers the open file dialog to the user and reads the selected file. It
+ * returns the data to a callback as a string.
+ * @param {!function} callback Callback function that takes an argument with the
+ *     text file contents in a string format.
+ */
+Bdf.openUserFile = function(callback) {
+  var fileOpenerWithCallback = function(e) {
+    var files = event.target.files;
+    // Only allow uploading one file.
+    if (files.length != 1) { 
+      alert('Can only read one file at a time.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onloadend = function(event) {
+      var target = event.target;
+      // 2 == FileReader.DONE
+      if (target.readyState == 2) {
+        callback(target.result);
+      }
+      // Reset value of input after loading because Chrome will not fire
+      // a 'change' event if the same file is loaded again.
+      document.getElementById('loadFileButton').value = '';
+    };
+    reader.readAsText(files[0]);
+  };
+  Bdf.loadFileEventHolder = fileOpenerWithCallback;
+  document.getElementById('loadFileButton').click();
+};
+
+/**
  * Inject code into a pre tag, with syntax highlighting.
  * Safe from HTML/script injection.
  * @param {string} code Lines of code.
@@ -143,7 +209,13 @@ Bdf.init = function() {
       open('https://developers.google.com/blockly/custom-blocks/block-factory',
            'BlockFactoryHelp');
     });
-
+  document.getElementById('loadFileButton').addEventListener(
+      'change', function(e) { Bdf.loadFileEventHolder(e); }, false);
+  document.getElementById('loadXmlFactoryButton').addEventListener(
+      'click', Bdf.openXmlFactory);
+  document.getElementById('saveXmlFactoryButton').addEventListener(
+      'click', Bdf.saveXmlFactory);
+  
   var expandList = [
     document.getElementById('blocklyFactory'),
     document.getElementById('blocklyFactoryMask'),

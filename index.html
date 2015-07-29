@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="prettify/prettify.css">
   <script src="prettify/prettify.js"></script>
+  <script src="filesaver/Blob.js"></script>
+  <script src="filesaver/FileSaver.min.js"></script>
   <script src="blockly/blockly_compressed.js"></script>
   <script src="blockly/blocks_compressed.js"></script>
   <script src="blockly/arduino_compressed.js"></script>
@@ -22,13 +24,23 @@
   <table>
     <!-- Firt row contains the title and buttons. -->
     <tr>
-      <td width="50%" height="5%">
-        <h1>BlocklyDuino: Block Factory</h1>
-      </td>
-      <td width="50%" height="5%">
+      <td height="5%" colspan="2">
         <table>
           <tr>
+            <td>
+              <h1>BlocklyDuino: Block Factory</h1>
+            </td>
             <td style="vertical-align: middle; text-align: right;">
+              <input type="file" id="loadFileButton" style="display: none;"/>
+              <button id="loadXmlFactoryButton" title="">
+                <span>Load Factory XML</span>
+              </button>
+              <button id="saveXmlFactoryButton" title="">
+                <span>Save Factory XML</span>
+              </button>
+              <button id="downloadButton" title="" disabled>
+                <span>Download Block</span>
+              </button>
               <button id="helpButton" title="View documentation in new window.">
                 <span>Help</span>
               </button>
@@ -44,7 +56,7 @@
         <table>
           <tr>
             <td height="4%" class="bottom_align">
-              <h3>Definition workspace:</h3>
+              <h3>Block Definition:</h3>
             </td>
           </tr>
           <tr>
@@ -55,7 +67,7 @@
           </tr>
           <tr>
             <td height="4%" class="bottom_align">
-              <h3>Generator workspace:</h3>
+              <h3>Block Generator:</h3>
             </td>
           </tr>
           <tr>
@@ -71,7 +83,7 @@
         <table>
           <tr>
             <td height="4%" class="bottom_align">
-              <h3>Language code:
+              <h3>Definition code:
                 <select id="format">
                   <option value="JavaScript">JavaScript</option>
                   <option value="JSON">JSON</option>
@@ -103,7 +115,7 @@
           </tr>
           <tr>
             <td height="4%" class="bottom_align">
-              <h3>Generator stub: Arduino</h3>
+              <h3>Generator Arduino code</h3>
             </td>
           </tr>
           <tr>
