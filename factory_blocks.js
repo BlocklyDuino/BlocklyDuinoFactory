@@ -499,6 +499,31 @@ Blockly.Blocks['field_image'] = {
   }
 };
 
+Blockly.Blocks['field_arduino_pin'] = {
+  // Set a dropdown field to selected an Arduino pin
+  init: function() {
+    this.setColour(160);
+    this.appendDummyInput()
+        .appendField('arduino')
+        .appendField(new Blockly.FieldDropdown(
+            [["digital", "DIGITAL"], ["analogue", "ANALOG"]]), "PIN_TYPE")
+        .appendField('pin dropdown,')
+        .appendField(new Blockly.FieldTextInput('NAME'), 'FIELDNAME');
+    this.setInputsInline(true);
+    this.setPreviousStatement(true, 'Field');
+    this.setNextStatement(true, 'Field');
+    this.setTooltip('Add a dropdown to select an Arduino pin.');
+    this.setHelpUrl('');
+  },
+  onchange: function() {
+    if (!this.workspace) {
+      // Block has been deleted.
+      return;
+    }
+    fieldNameCheck(this);
+  }
+};
+
 Blockly.Blocks['type_group'] = {
   // Group of types.
   init: function() {

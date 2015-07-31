@@ -355,6 +355,18 @@ Bdf.Factory.getFieldsJs_ = function(block) {
           fields.push('new Blockly.FieldImage(' +
               src + ', ' + width + ', ' + height + ', ' + alt + ')');
           break;
+        case 'field_arduino_pin':
+          // Result:
+          // new Blockly.FieldDropdown(profile.default.PIN_TYPE), 'PIN_NAME'
+          var pinType = block.getFieldValue('PIN_TYPE');
+          if (pinType === 'DIGITAL') {
+            fields.push('new Blockly.FieldDropdown(profile.default.digital), ' +
+                Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
+          } else if (pinType === 'ANALOG') {
+            fields.push('new Blockly.FieldDropdown(profile.default.analog), ' +
+                Bdf.Factory.escapeString_(block.getFieldValue('FIELDNAME')));
+          }
+          break;
       }
     }
     block = block.nextConnection && block.nextConnection.targetBlock();
@@ -441,6 +453,22 @@ Bdf.Factory.getFieldsJson_ = function(block) {
             height: Number(block.getFieldValue('HEIGHT')),
             alt: block.getFieldValue('ALT')
           });
+          break;
+        case 'field_arduino_pin':
+          var pinType = block.getFieldValue('PIN_TYPE');
+          if (pinType === 'DIGITAL') {
+            fields.push({
+              type: block.type,
+              name: block.getFieldValue('FIELDNAME'),
+              options: profile.default.digital
+            });
+          } else if (pinType === 'ANALOG') {
+            fields.push({
+              type: block.type,
+              name: block.getFieldValue('FIELDNAME'),
+              options: profile.default.analog
+            });
+          }
           break;
       }
     }
